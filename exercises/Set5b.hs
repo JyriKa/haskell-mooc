@@ -239,9 +239,9 @@ search' val steps (Node v l r)
 search :: Eq a => a -> Tree a -> Maybe [Step]
 search _ Empty = Nothing
 search val (Node v l r)
-  | val == v    = Just [] 
+  | val == v    = Just []
   | otherwise   =
     let result = reverse $ search' val [] (Node v l r)
     in if null result
-       then Nothing 
+       then Nothing
        else Just result

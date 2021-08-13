@@ -13,7 +13,10 @@ data Country = Finland | Switzerland | Norway
   deriving Show
 
 instance Eq Country where
-  (==) = todo
+  Finland == Finland = True
+  Norway == Norway = True
+  Switzerland == Switzerland = True
+  _ == _ = False
 
 ------------------------------------------------------------------------------
 -- Ex 2: implement an Ord instance for Country so that
@@ -22,10 +25,20 @@ instance Eq Country where
 -- Remember minimal complete definitions!
 
 instance Ord Country where
-  compare = todo -- implement me?
-  (<=) = todo -- and me?
-  min = todo -- and me?
-  max = todo -- and me?
+  compare x y | x == y            = EQ
+              | x == Finland      = LT
+              | y == Finland      = GT
+              | x == Norway       = LT
+              | y == Norway       = GT
+              | otherwise         = EQ
+
+  x <= y  = compare x y /= GT
+
+  min x y | x <= y    = x
+          | otherwise = y
+
+  max x y | x <= y    = y
+          | otherwise = x
 
 ------------------------------------------------------------------------------
 -- Ex 3: Implement an Eq instance for the type Name which contains a String.
@@ -37,11 +50,14 @@ instance Ord Country where
 --   Name "Pekka" == Name "pekka"   ==> True
 --   Name "Pekka!" == Name "pekka"  ==> False
 
+strLower :: String -> String
+strLower str = [toLower c | c <- str]
+
 data Name = Name String
   deriving Show
 
 instance Eq Name where
-  (==) = todo
+  Name a == Name b = strLower a == strLower b
 
 ------------------------------------------------------------------------------
 -- Ex 4: here is a list type parameterized over the type it contains.
@@ -55,7 +71,16 @@ data List a = Empty | LNode a (List a)
   deriving Show
 
 instance Eq a => Eq (List a) where
-  (==) = todo
+  a == b = compLists a b
+
+compLists :: Eq a => List a -> List a -> Bool
+compLists Empty Empty = True
+compLists Empty _ = False
+compLists _ Empty = False
+compLists (LNode v1 l1) (LNode v2 l2) = 
+  if v1 == v2
+  then compLists l1 l2
+  else False
 
 ------------------------------------------------------------------------------
 -- Ex 5: below you'll find two datatypes, Egg and Milk. Implement a
@@ -75,6 +100,15 @@ data Egg = ChickenEgg | ChocolateEgg
 data Milk = Milk Int -- amount in litres
   deriving Show
 
+class Price a where
+  price :: a -> Int
+
+instance Price Milk where
+  price (Milk l) = l * 15
+
+instance Price Egg where
+  price ChickenEgg = 20
+  price ChocolateEgg = 30
 
 ------------------------------------------------------------------------------
 -- Ex 6: define the necessary instances in order to be able to compute these:
@@ -84,6 +118,12 @@ data Milk = Milk Int -- amount in litres
 -- price [Just ChocolateEgg, Nothing, Just ChickenEgg]  ==> 50
 -- price [Nothing, Nothing, Just (Milk 1), Just (Milk 2)]  ==> 45
 
+instance Price a => Price (Maybe a) where
+  price Nothing = 0
+  price (Just p) = price p
+
+instance Price a => Price [a] where
+  price xs = foldr (\ a b -> (price a) + b) 0 xs
 
 ------------------------------------------------------------------------------
 -- Ex 7: below you'll find the datatype Number, which is either an
@@ -93,8 +133,7 @@ data Milk = Milk Int -- amount in litres
 -- and Infinite is greater than any other value.
 
 data Number = Finite Integer | Infinite
-  deriving (Show,Eq)
-
+  deriving (Show,Eq, Ord)
 
 ------------------------------------------------------------------------------
 -- Ex 8: rational numbers have a numerator and a denominator that are
@@ -120,7 +159,7 @@ data RationalNumber = RationalNumber Integer Integer
   deriving Show
 
 instance Eq RationalNumber where
-  p == q = todo
+  (RationalNumber a1 b1) == (RationalNumber a2 b2) = a1*b2 == a2*b1
 
 ------------------------------------------------------------------------------
 -- Ex 9: implement the function simplify, which simplifies rational a
@@ -140,7 +179,11 @@ instance Eq RationalNumber where
 -- Hint: Remember the function gcd?
 
 simplify :: RationalNumber -> RationalNumber
-simplify p = todo
+simplify (RationalNumber a b) = 
+  let nn = gcd a b
+  in if nn <= 1
+     then (RationalNumber a b)
+     else simplify (RationalNumber (a `div` nn) (b `div` nn))
 
 ------------------------------------------------------------------------------
 -- Ex 10: implement the typeclass Num for RationalNumber. The results
@@ -161,12 +204,25 @@ simplify p = todo
 --   signum (RationalNumber 0 2)             ==> RationalNumber 0 1
 
 instance Num RationalNumber where
-  p + q = todo
-  p * q = todo
-  abs q = todo
-  signum q = todo
-  fromInteger x = todo
-  negate q = todo
+  p + q = simplify $ rationalAddition p q
+
+  p * q = simplify $ rationalMultiply p q
+
+  abs (RationalNumber a b) = RationalNumber (abs a) b
+
+  signum (RationalNumber a b) = RationalNumber (signum a) (signum b)
+
+  fromInteger x = RationalNumber x 1
+
+  negate (RationalNumber a b) = RationalNumber (-a) b
+
+rationalAddition :: RationalNumber -> RationalNumber -> RationalNumber
+rationalAddition (RationalNumber a1 b1) (RationalNumber a2 b2) =
+  RationalNumber ((a1*b2)+(a2*b1)) (b1*b2)
+
+rationalMultiply :: RationalNumber -> RationalNumber -> RationalNumber
+rationalMultiply (RationalNumber a1 b1) (RationalNumber a2 b2) =
+  RationalNumber (a1*a2) (b1*b2)
 
 ------------------------------------------------------------------------------
 -- Ex 11: a class for adding things. Define a class Addable with a
@@ -181,6 +237,17 @@ instance Num RationalNumber where
 --   add [1,2] [3,4]        ==>  [1,2,3,4]
 --   add zero [True,False]  ==>  [True,False]
 
+class Addable a where
+  zero :: a
+  add :: a -> a -> a
+
+instance Addable Integer where
+  zero = 0
+  add a b = a + b
+
+instance Addable [a] where
+  zero = []
+  add a b = a ++ b
 
 ------------------------------------------------------------------------------
 -- Ex 12: cycling. Implement a type class Cycle that contains a
@@ -208,7 +275,23 @@ instance Num RationalNumber where
 --      step = succ
 
 data Color = Red | Green | Blue
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 data Suit = Club | Spade | Diamond | Heart
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 
+class Cycle a where
+  step :: a -> a
+  stepMany :: Int -> a -> a
+  stepMany steps t = if steps > 0 
+                     then stepMany (steps-1) (step t)
+                     else t
+
+instance Cycle Color where
+  step s = if s == (maxBound :: Color)
+           then minBound :: Color
+           else succ s
+
+instance Cycle Suit where
+  step s = if s == (maxBound :: Suit)
+           then minBound :: Suit
+           else succ s
