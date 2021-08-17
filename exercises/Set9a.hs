@@ -252,4 +252,4 @@ multiply :: Permutation -> Permutation -> Permutation
 multiply p q = map (\i -> p !! (q !! i)) (identity (length p))
 
 permute :: Permutation -> [a] -> [a]
-permute perm xs = map (\ (a,b) -> b) (sortBy (\(a,_) (b,_) -> compare a b) [pair | p <- perm, let pair = (snd p, xs !! fst p)])
+permute perm xs = map (\(a,b) -> b) (sortBy (\(a,_) (b,_) -> compare a b) [(perm !! i, xs !! i) | i <- identity (length perm)])
