@@ -47,10 +47,10 @@ type Col   = Int
 type Coord = (Row, Col)
 
 nextRow :: Coord -> Coord
-nextRow (i,j) = todo
+nextRow (i,j) = (i+1, 1)
 
 nextCol :: Coord -> Coord
-nextCol (i,j) = todo
+nextCol (i,j) = (i, j+1)
 
 --------------------------------------------------------------------------------
 -- Ex 2: Implement the function prettyPrint that, given the size of
@@ -99,8 +99,36 @@ nextCol (i,j) = todo
 -- of the width (or height) n of the chess board; the naïve solution with elem
 -- takes O(n^3) time. Just ignore the previous sentence, if you're not familiar
 -- with the O-notation.)
+
+makeGrid :: Size -> String
+makeGrid size = f (1, 1)
+  where
+    f (i, j)
+      | i == size+1  = ""
+      | j == size+1  = '\n' : f (nextRow (i, j))
+      | otherwise    = '.' : f (nextCol (i, j))
+
+
+prettyPrint9 :: Size -> [Coord] -> String
+prettyPrint9 size xs = f (makeGrid size) xs
+  where
+    f grid [] = grid
+    f grid ((i, j):coords) =
+      let split = splitAt ((i-1)*(size+1) + j-1) grid
+      in f (fst split ++ ('Q' : tail (snd split))) coords
+
 prettyPrint :: Size -> [Coord] -> String
-prettyPrint = todo
+prettyPrint size xs = 
+  let sorted = sortBy (\(i1,j1) (i2,j2) -> compare (i1*size+j1) (i2*size+j2)) xs
+  in f (1,1) (head sorted) (tail sorted)
+    where 
+      f current coord coords
+        | fst current == size+1 = ""
+        | snd current == size+1 = '\n' : f (nextRow current) coord coords
+        | current == coord      = 'Q' : if not (null coords)
+                                        then f (nextCol current) (head coords) (tail coords)
+                                        else f (nextCol current) (0,0) []
+        | otherwise             = '.' : f (nextCol current) coord coords
 
 --------------------------------------------------------------------------------
 -- Ex 3: The task in this exercise is to define the relations sameRow, sameCol,
@@ -124,16 +152,16 @@ prettyPrint = todo
 --   sameAntidiag (500,5) (5,500) ==> True
 
 sameRow :: Coord -> Coord -> Bool
-sameRow (i,j) (k,l) = todo
+sameRow (i,j) (k,l) = i == k
 
 sameCol :: Coord -> Coord -> Bool
-sameCol (i,j) (k,l) = todo
+sameCol (i,j) (k,l) = j == l
 
 sameDiag :: Coord -> Coord -> Bool
-sameDiag (i,j) (k,l) = todo
+sameDiag (i,j) (k,l) = i-k == j-l
 
 sameAntidiag :: Coord -> Coord -> Bool
-sameAntidiag (i,j) (k,l) = todo
+sameAntidiag (i,j) (k,l) = k-i == j-l
 
 --------------------------------------------------------------------------------
 -- Ex 4: In chess, a queen may capture another piece in the same row, column,
@@ -189,7 +217,9 @@ type Candidate = Coord
 type Stack     = [Coord]
 
 danger :: Candidate -> Stack -> Bool
-danger = todo
+danger _ [] = False
+danger coord (x:xs) = if isDanger then True else danger coord xs
+  where isDanger = sameRow coord x || sameCol coord x || sameDiag coord x || sameAntidiag coord x
 
 --------------------------------------------------------------------------------
 -- Ex 5: In this exercise, the task is to write a modified version of
@@ -224,7 +254,7 @@ danger = todo
 -- solution to this version. Any working solution is okay in this exercise.)
 
 prettyPrint2 :: Size -> Stack -> String
-prettyPrint2 = todo
+prettyPrint2 size coords = todo
 
 --------------------------------------------------------------------------------
 -- Ex 6: Now that we can check if a piece can be safely placed into a square in
