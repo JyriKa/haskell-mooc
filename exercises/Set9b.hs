@@ -100,6 +100,7 @@ nextCol (i,j) = (i, j+1)
 -- takes O(n^3) time. Just ignore the previous sentence, if you're not familiar
 -- with the O-notation.)
 
+---another idea
 makeGrid :: Size -> String
 makeGrid size = f (1, 1)
   where
@@ -116,6 +117,7 @@ prettyPrint9 size xs = f (makeGrid size) xs
     f grid ((i, j):coords) =
       let split = splitAt ((i-1)*(size+1) + j-1) grid
       in f (fst split ++ ('Q' : tail (snd split))) coords
+---
 
 prettyPrint :: Size -> [Coord] -> String
 prettyPrint size xs = 
@@ -254,7 +256,14 @@ danger coord (x:xs) = if isDanger then True else danger coord xs
 -- solution to this version. Any working solution is okay in this exercise.)
 
 prettyPrint2 :: Size -> Stack -> String
-prettyPrint2 size coords = todo
+prettyPrint2 size coords = f (1, 1)
+  where 
+    f yx
+      | fst yx == size+1  = ""
+      | snd yx == size+1  = '\n' : f (nextRow yx)
+      | elem yx coords    = 'Q' : f (nextCol yx)
+      | danger yx coords  = '#' : f (nextCol yx)
+      | otherwise         = '.' : f (nextCol yx)
 
 --------------------------------------------------------------------------------
 -- Ex 6: Now that we can check if a piece can be safely placed into a square in
@@ -299,7 +308,12 @@ prettyPrint2 size coords = todo
 --     Q#######
 
 fixFirst :: Size -> Stack -> Maybe Stack
-fixFirst n s = todo
+fixFirst n s = f (head s) (tail s)
+  where 
+    f yx xs
+      | snd yx > n  = Nothing
+      | danger yx xs  = f (nextCol yx) xs
+      | otherwise   = Just (yx:xs)
 
 --------------------------------------------------------------------------------
 -- Ex 7: We need two helper functions for stack management.
@@ -321,10 +335,10 @@ fixFirst n s = todo
 -- Hint: Remember nextRow and nextCol? Use them!
 
 continue :: Stack -> Stack
-continue s = todo
+continue s = nextRow (head s) : s
 
 backtrack :: Stack -> Stack
-backtrack s = todo
+backtrack s = nextCol (s !! 1) : drop 2 s
 
 --------------------------------------------------------------------------------
 -- Ex 8: Let's take a step. Our algorithm solves the problem (in a
@@ -393,7 +407,9 @@ backtrack s = todo
 --     step 8 [(6,1),(5,4),(4,2),(3,5),(2,3),(1,1)] ==> [(5,5),(4,2),(3,5),(2,3),(1,1)]
 
 step :: Size -> Stack -> Stack
-step = todo
+step n s = f (fixFirst n s)
+  where f (Just fixed) = continue fixed
+        f Nothing      = backtrack s
 
 --------------------------------------------------------------------------------
 -- Ex 9: Let's solve our puzzle! The function finish takes a partial
@@ -408,7 +424,11 @@ step = todo
 -- solve the n queens problem.
 
 finish :: Size -> Stack -> Stack
-finish = todo
+finish n s = 
+  let stepped = (step n s)
+  in if length stepped > n
+     then tail stepped
+     else finish n stepped
 
 solve :: Size -> Stack
 solve n = finish n [(1,1)]
