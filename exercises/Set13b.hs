@@ -40,7 +40,9 @@ test = do
   return (x<10)
 
 ifM :: Monad m => m Bool -> m a -> m a -> m a
-ifM opBool opThen opElse = todo
+ifM opBool opThen opElse = do
+  v <- opBool
+  if v then opThen else opElse
 
 ------------------------------------------------------------------------------
 -- Ex 2: the standard library function Control.Monad.mapM defines a
@@ -82,7 +84,12 @@ perhapsIncrement True x = modify (+x)
 perhapsIncrement False _ = return ()
 
 mapM2 :: Monad m => (a -> b -> m c) -> [a] -> [b] -> m [c]
-mapM2 op xs ys = todo
+mapM2 _ [] _ = return mempty
+mapM2 _ _ [] = return mempty
+mapM2 op (x:xs) (y:ys) = do
+  r <- op x y
+  rs <- mapM2 op xs ys
+  return $ r:rs
 
 ------------------------------------------------------------------------------
 -- Ex 3: Finding paths.
@@ -163,7 +170,11 @@ path maze place1 place2 = todo
 -- PS. The tests don't care about the order of results.
 
 findSum2 :: [Int] -> [Int] -> [(Int,Int,Int)]
-findSum2 ks ns = todo
+findSum2 ks ns = do
+  a <- ks
+  b <- ks
+  sum <- ns
+  if a+b == sum then [(a,b,sum)] else []
 
 ------------------------------------------------------------------------------
 -- Ex 5: compute all possible sums of elements from the given
@@ -184,7 +195,10 @@ findSum2 ks ns = todo
 --     ==> [7,3,5,1,6,2,4,0]
 
 allSums :: [Int] -> [Int]
-allSums xs = todo
+allSums xs = do
+  y:xs' <- tails xs
+  x <- xs
+  [x+y]
 
 ------------------------------------------------------------------------------
 -- Ex 6: the standard library defines the function
